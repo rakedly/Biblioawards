@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Biblio Awards</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #0e0e14;
+      color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    header { text-align: center; margin-top: 50px; }
+    h1 {
+      font-family: 'Great Vibes', cursive;
+      font-size: 3em;
+      background: linear-gradient(90deg, #c9a34e, #ffd65e, #b8860b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 15px rgba(255, 215, 100, 0.3);
+      margin: 0;
+    }
+    main { width: 100%; display: flex; flex-direction: column; align-items: center; }
+    .card {
+      background: rgba(25, 25, 40, 0.85);
+      border: 1px solid transparent;
+      border-image: linear-gradient(45deg, #b8860b, #ffd65e, #c9a34e) 1;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 0 15px rgba(255, 215, 100, 0.15);
+      width: 90%;
+      max-width: 900px;
+      margin: 25px 0;
+      text-align: center;
+      backdrop-filter: blur(6px);
+      transition: transform 0.3s ease;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 0 25px rgba(255, 215, 100, 0.3); }
+    button {
+      margin: 10px;
+      background: linear-gradient(135deg, #b8860b, #ffd65e);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 24px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 1em;
+      letter-spacing: 0.5px;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 10px rgba(255, 215, 100, 0.2);
+    }
+    button:hover {
+      background: linear-gradient(135deg, #ffd65e, #b8860b);
+      box-shadow: 0 0 20px rgba(255, 215, 100, 0.4);
+      transform: scale(1.05);
+    }
+    .hidden { display: none; }
+    .msg { text-align: center; margin-top: 20px; font-size: 1.1em; }
+    .msg.success { color: #80ff9b; }
+    .msg.error { color: #ff8080; }
+  </style>
+</head>
+<body>
+  <header><h1>Biblio Awards</h1></header>
+  <main>
+    <div class="card" id="home">
+      <p>Bienvenido a los <strong>Biblio Awards</strong>. Aquí podrás leer las reglas o comenzar a votar.</p>
+      <button id="btnRules">Leer reglas</button>
+      <button id="btnVote">Comenzar votación</button>
+    </div>
+    <div class="card hidden" id="rules">
+      <h2>Reglas</h2>
+      <ol style="text-align:left">
+        <li>Solo un voto por persona.</li>
+        <li>Los votos se registran con cookies para evitar duplicados.</li>
+        <li>Debes votar en todas las categorías antes de finalizar.</li>
+      </ol>
+      <button id="backHome1">Volver al inicio</button>
+    </div>
+    <div class="card hidden" id="vote">
+      <h2>Votación</h2>
+      <div id="usernameBox">
+        <input type="text" id="username" placeholder="Tu usuario + ID (Ej: Isaías#1234)" style="width:80%; padding:8px; border:none; border-radius:6px; margin-top:10px; background:#2a2a3a; color:#fff;">
+        <button id="startVoting">Comenzar</button>
+      </div>
+      <div id="categoryPage" class="hidden">
+        <h3 id="categoryTitle"></h3>
+        <div id="nomineesGrid"></div>
+        <button id="confirmVote" class="hidden">Confirmar voto</button>
+      </div>
+      <div id="finishPage" class="hidden">
+        <h3>¡Gracias por votar!</h3>
+        <p id="resultMsg">Enviando tus votos...</p>
+        <button id="backHome2">Volver al inicio</button>
+      </div>
+    </div>
+  </main>
+  <script>
+    const nominees = {
+      'Mejor comediante': ['Frisk','Menethril','Moussy','Mc_lovin','Choripan','Mclovin_Ohio'],
+      'Líder nato': ['Seraphim','Kai','Venus','Darkley','Cademu','Aegbgo'],
+      'Mejor jugador': ['Kai','Moussy','Venus','Choripan757','Antonio911','Aegbgo','Aisuru']
+    };
+    const categories = Object.keys(nominees);
+    const COOKIE_NAME = 'biblio_voted';
+    const COOKIE_MAX_AGE = 60*60*24*365;
+    function setCookie(n,v,m){document.cookie=n+'='+v+'; max-age='+m+'; path=/';}
+    function getCookie(n){const c=document.cookie.split(';');for(let i of c){const [k,v]=i.trim().split('=');if(k===n)return v;}return null;}
+    function hasVoted(){return getCookie(COOKIE_NAME)!==null;}
+    const home=document.getElementById('home');
+    const rules=document.getElementById('rules');
+    const vote=document.getElementById('vote');
+    const categoryPage=document.getElementById('categoryPage');
+    const usernameBox=document.getElementById('usernameBox');
+    const confirmBtn=document.getElementById('confirmVote');
+    const nomineesGrid=document.getElementById('nomineesGrid');
+    const finishPage=document.getElementById('finishPage');
+    const resultMsg=document.getElementById('resultMsg');
+    let currentCategoryIndex=0, username='', selectedNominee=''; const votes={};
+    document.getElementById('btnRules').onclick=()=>{home.classList.add('hidden');rules.classList.remove('hidden');}
+    document.getElementById('btnVote').onclick=()=>{home.classList.add('hidden');vote.classList.remove('hidden');}
+    document.getElementById('backHome1').onclick=()=>{rules.classList.add('hidden');home.classList.remove('hidden');}
+    document.getElementById('backHome2').onclick=()=>{finishPage.classList.add('hidden');home.classList.remove('hidden');}
+    if(hasVoted()){usernameBox.innerHTML='<p style="color:#ffd65e">Ya votaste desde este navegador.</p>';}
+    document.getElementById('startVoting').onclick=()=>{username=document.getElementById('username').value.trim();if(!username){alert('Ingresa tu usuario.');return;}usernameBox.classList.add('hidden');loadCategory();}
+    function loadCategory(){if(currentCategoryIndex>=categories.length){finishVoting();return;}categoryPage.classList.remove('hidden');const category=categories[currentCategoryIndex];document.getElementById('categoryTitle').textContent=category;nomineesGrid.innerHTML='';selectedNominee='';confirmBtn.classList.add('hidden');nominees[category].forEach(n=>{const div=document.createElement('div');div.className='nominee';div.textContent=n;div.onclick=()=>selectNominee(div,n);nomineesGrid.appendChild(div);});}
+    function selectNominee(div,n){document.querySelectorAll('.nominee').forEach(e=>e.classList.remove('selected'));div.classList.add('selected');selectedNominee=n;confirmBtn.classList.remove('hidden');}
+    confirmBtn.onclick=()=>{if(!selectedNominee)return;const category=categories[currentCategoryIndex];votes[category]=selectedNominee;currentCategoryIndex++;loadCategory();}
+    async function finishVoting(){categoryPage.classList.add('hidden');finishPage.classList.remove('hidden');setCookie(COOKIE_NAME,'1',COOKIE_MAX_AGE);const scriptURL='https://script.google.com/macros/s/AKfycbyDUJ6CjPUqAIINuYsx0s1sAxWRQnEKTIuuH3dHoQv4jMV8ZCt3Leaivmm2xHB3G8Pm/exec';let ok=0;try{for(const c in votes){const n=votes[c];const p=new URLSearchParams({categoria:c,nombre:n});const r=await fetch(scriptURL,{method:'POST',body:p});if(r.ok)ok++;}resultMsg.textContent='✅ Votos enviados correctamente ('+ok+' categorías)';resultMsg.style.color='#80ff9b';}catch(e){resultMsg.textContent='⚠️ Error al enviar votos. Revisa tu conexión.';resultMsg.style.color='#ff8080';}}
+  </script>
+</body>
+</html>
